@@ -13,7 +13,7 @@ using RedUtils.Math;
 namespace Bot
 {
     // Your bot class! :D
-    public class RedBot : RUBot
+    public partial class RedBot : RUBot
     {
         // We want the constructor for our Bot to extend from RUBot, but feel free to add some other initialization in here as well.
         public RedBot(string botName, int botTeam, int botIndex) : base(botName, botTeam, botIndex) { }
@@ -37,12 +37,25 @@ namespace Bot
             }
             else if (Action == null || (Action is Drive && Action.Interruptible))
             {
-                // search for the first avaliable shot using DefaultShotCheck
-                Shot shot = FindShot(DefaultShotCheck, new Target(TheirGoal));
+               switch (Teammates.Count)
+                {
+                    case 0:
+                        OnesLogic();
+                        break;
+                    case 1:
+                        TwosLogic();
+                        break;
+                    case 2:
+                        ThreesLogic();
+                        break;
+                    default:
+                        HordeLogic();
+                        break;
 
-                // if a shot is found, go for the shot. Otherwise, if there is an Action to execute, execute it. If none of the others apply, drive back to goal.
-                Action = shot ?? Action ?? new Drive(Me, OurGoal.Location);
+                }
 			}
         }
+
+        
     }
 }
