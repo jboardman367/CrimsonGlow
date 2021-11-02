@@ -157,7 +157,7 @@ namespace RedUtils
 			Interruptible = Drive.Interruptible;
 
 			// If we have arrived, or we ran out of time, finish this action
-			if (Field.LimitToNearestSurface(bot.Me.Location).Dist(Field.LimitToNearestSurface(Target)) < 100 || ArrivalTime < Game.Time)
+			if (Field.LimitToNearestSurface(bot.Me.Location).Dist(Field.LimitToNearestSurface(Target)) < 100 || (ArrivalTime < Game.Time && ArrivalTime != -1))
 			{
 				Finished = true;
 			}

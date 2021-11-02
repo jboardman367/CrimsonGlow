@@ -22,7 +22,7 @@ namespace Bot
         public override void Run()
         {
             // Prints out the current action to the screen, so we know what our bot is doing
-            DrawText2D(Action != null ? Action.ToString() : "", Color.FromArgb(255, 255, 255), new Vec3(10, 10), 5, 5);
+            DrawText2D(Action != null ? Action.ToString() : "", Color.FromArgb(255, 255, 255), new Vec3(10, 10 + 60 * Index), 5, 5);
 
             if (IsKickoff && Action == null)
             {
@@ -35,7 +35,7 @@ namespace Bot
 
                 Action = goingForKickoff ? new Kickoff() : new GetBoost(Me, false); // if we aren't going for the kickoff, get boost
             }
-            else if (Action == null || (Action is Drive && Action.Interruptible))
+            else if (Action == null || (Action.Interruptible))
             {
                switch (Teammates.Count)
                 {
@@ -57,5 +57,46 @@ namespace Bot
         }
 
         
+    }
+    public struct Line3
+    {
+        public Vec3 Slope;
+
+        public Vec3 Point;
+
+        public Vec3 PointAtY(float y_value)
+        {
+            float y_diff = y_value - Point.y;
+            return Point + y_diff * Slope;
+        }
+
+        public Vec3 PointAtX(float x_value)
+        {
+            float x_diff = x_value - Point.y;
+            return Point + x_diff * Slope;
+        }
+
+        public Vec3 PerpToPoint(Vec3 point)
+        {
+            return (point - Point) - (point - Point).Dot(Slope) * Slope;
+        }
+
+        public Line3(Vec3 point, Vec3 slope)
+        {
+            Slope = slope.Normalize();
+            Point = point;
+        }
+
+        public Line3(Ball ball)
+        {
+            Slope = ball.velocity;
+            Point = ball.location;
+        }
+
+        public Line3(Car car)
+        {
+            Slope = car.Velocity;
+            Point = car.Location;
+        }
     }
 }
