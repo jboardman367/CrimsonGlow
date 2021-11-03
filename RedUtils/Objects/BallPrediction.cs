@@ -61,7 +61,7 @@ namespace RedUtils
                     {
                         for (int j = i - 6; j < i; j++)
                         {
-                            if (Slices[j].Location.y * side > 5250) 
+                            if (Slices[j].Location.y * side > 5250)
                                 return Slices[j];
                         }
                     }

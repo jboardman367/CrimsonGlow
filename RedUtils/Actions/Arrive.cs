@@ -110,10 +110,12 @@ namespace RedUtils
 			// Calculates various important values
 			float distance = Distance(bot.Me);
 			float carSpeed = bot.Me.Velocity.Length();
-			float targetSpeed = distance / TimeRemaining;
 
 			// Calculates how much time we have before we should arrive
 			TimeRemaining = ArrivalTime < 0 ? distance / Car.MaxSpeed : MathF.Max(ArrivalTime - Game.Time, 0.001f);
+
+			// Based on the time remaining, calculate our target speed
+			float targetSpeed = distance / TimeRemaining;
 
 			// Predicts (roughly) the location of the car after dodging
 			Vec3 predictedLocation = bot.Me.LocationAfterDodge();
@@ -131,7 +133,7 @@ namespace RedUtils
 				float shift = MathF.Min(Field.DistanceBetweenPoints(Target, bot.Me.Location) * 0.6f, Utils.Cap(carSpeed, 1410, Car.MaxSpeed) * 1.5f);
 				float turnRadius = Drive.TurnRadius(Utils.Cap(carSpeed, 500, Car.MaxSpeed)) * 1.2f;
 
-				shift *= targetSpeed < 2200 ? Utils.Cap((shift - additionalShift) / turnRadius, 0f, 1f) : 0;
+				shift *= targetSpeed < 2200 || ArrivalTime < 0 ? Utils.Cap((shift - additionalShift) / turnRadius, 0f, 1f) : 0;
 
 				// Shifts the target such that the direction it is shifted is not on the other side of the final target relative to the car
 				Vec3 leftDirection = directionToTarget.Cross(surfaceNormal).Normalize();
@@ -157,7 +159,7 @@ namespace RedUtils
 			Interruptible = Drive.Interruptible;
 
 			// If we have arrived, or we ran out of time, finish this action
-			if (Field.LimitToNearestSurface(bot.Me.Location).Dist(Field.LimitToNearestSurface(Target)) < 100 || (ArrivalTime < Game.Time && ArrivalTime != -1))
+			if (Field.LimitToNearestSurface(bot.Me.Location).Dist(Field.LimitToNearestSurface(Target)) < 100 || (ArrivalTime < Game.Time && ArrivalTime > 0))
 			{
 				Finished = true;
 			}

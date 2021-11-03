@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Drawing;
+using System.Numerics;
 using System.Collections.Generic;
+using System.Linq;
 using RedUtils.Math;
 using RLBotDotNet;
 
 /* 
  * This file extends the RUBot class with some extra tools that make bot creation easier.
  * You probably won't want to edit to much in here, except the ShotCheck functions.
- * You are encourged to make your own, although feel free to continue using the default one if you like.
+ * You are encouraged to make your own, although feel free to continue using the default one if you like.
  */
 
 namespace RedUtils
@@ -25,7 +27,7 @@ namespace RedUtils
 		/// <param name="scaleY">The vertical scale of the text</param>
 		public void DrawText2D(string text, Color color, Vec3 upperLeftPoint, int scaleX, int scaleY)
 		{
-			System.Numerics.Vector2 drawPoint = new System.Numerics.Vector2(upperLeftPoint.x, upperLeftPoint.y);
+			Vector2 drawPoint = new Vector2(upperLeftPoint.x, upperLeftPoint.y);
 			Renderer.DrawString2D(text, color, drawPoint, scaleX, scaleY);
 		}
 
@@ -37,7 +39,7 @@ namespace RedUtils
 		/// <param name="scaleY">The vertical scale of the text</param>
 		public void DrawText3D(string text, Color color, Vec3 upperLeftPoint, int scaleX, int scaleY)
 		{
-			System.Numerics.Vector3 drawPoint = new System.Numerics.Vector3(upperLeftPoint.x, upperLeftPoint.y, upperLeftPoint.z);
+			Vector3 drawPoint = new Vector3(upperLeftPoint.x, upperLeftPoint.y, upperLeftPoint.z);
 			Renderer.DrawString3D(text, color, drawPoint, scaleX, scaleY);
 		}
 
@@ -47,8 +49,8 @@ namespace RedUtils
 		/// <param name="color">The color of the line</param>
 		public void DrawLine2D(Vec3 startPoint, Vec3 endPoint, Color color)
 		{
-			System.Numerics.Vector2 _startPoint = new System.Numerics.Vector2(startPoint.x, startPoint.y);
-			System.Numerics.Vector2 _endPoint = new System.Numerics.Vector2(endPoint.x, endPoint.y);
+			Vector2 _startPoint = new Vector2(startPoint.x, startPoint.y);
+			Vector2 _endPoint = new Vector2(endPoint.x, endPoint.y);
 			Renderer.DrawLine2D(color, _startPoint, _endPoint);
 		}
 
@@ -58,8 +60,8 @@ namespace RedUtils
 		/// <param name="color">The color of the line</param>
 		public void DrawLine3D(Vec3 startPoint, Vec3 endPoint, Color color)
 		{
-			System.Numerics.Vector3 _startPoint = new System.Numerics.Vector3(startPoint.x, startPoint.y, startPoint.z);
-			System.Numerics.Vector3 _endPoint = new System.Numerics.Vector3(endPoint.x, endPoint.y, endPoint.z);
+			Vector3 _startPoint = new Vector3(startPoint.x, startPoint.y, startPoint.z);
+			Vector3 _endPoint = new Vector3(endPoint.x, endPoint.y, endPoint.z);
 			Renderer.DrawLine3D(color, _startPoint, _endPoint);
 		}
 
@@ -68,14 +70,7 @@ namespace RedUtils
 		/// <param name="color">The color of the lines</param>
 		public void DrawPolyLine2D(Vec3[] points, Color color)
 		{
-			System.Numerics.Vector2[] numericPoints = new System.Numerics.Vector2[points.Length];
-
-			for (int i = 0; i < points.Length; i++)
-			{
-				numericPoints[i] = new System.Numerics.Vector2(points[i].x, points[i].y);
-			}
-
-			Renderer.DrawPolyLine2D(color, numericPoints);
+			Renderer.DrawPolyLine2D(color, points.Select(vec => new Vector2(vec.x, vec.y)).ToArray());
 		}
 
 		/// <summary>Draws a bunch of 3D lines that connect the points. Kinda like a connect the dots puzzle!</summary>
@@ -83,30 +78,12 @@ namespace RedUtils
 		/// <param name="color">The color of the lines</param>
 		public void DrawPolyLine3D(Vec3[] points, Color color)
 		{
-			System.Numerics.Vector3[] numericPoints = new System.Numerics.Vector3[points.Length];
-
-			for (int i = 0; i < points.Length; i++)
-			{
-				numericPoints[i] = new System.Numerics.Vector3(points[i].x, points[i].y, points[i].z);
-			}
-
-			Renderer.DrawPolyLine3D(color, numericPoints);
+			Renderer.DrawPolyLine3D(color, points.Select(vec => new Vector3(vec.x, vec.y, vec.z)).ToArray());
 		}
 
 		/// <summary>Throttles and boosts to reach the given target speed</summary>
 		/// <returns>The current forward speed of the car</returns>
-		public float Throttle(float targetSpeed)
-		{
-			float carSpeed = Me.Forward.Dot(Me.Velocity); // The car's speed in the forward direction
-			float speedDiff = targetSpeed - carSpeed;
-			Controller.Throttle = Utils.Cap(MathF.Pow(speedDiff, 2) * MathF.Sign(speedDiff) / 1000, -1, 1);
-			Controller.Boost = targetSpeed > 1400 && speedDiff > 50 && carSpeed < 2250 && Controller.Throttle == 1;
-			return carSpeed;
-		}
-
-		/// <summary>Throttles and boosts to reach the given target speed</summary>
-		/// <returns>The current forward speed of the car</returns>
-		public float Throttle(float targetSpeed, bool backwards)
+		public float Throttle(float targetSpeed, bool backwards = false)
 		{
 			float carSpeed = Me.Local(Me.Velocity).x; // The car's speed in the forward direction
 			float speedDiff = (targetSpeed * (backwards ? -1 : 1)) - carSpeed;
@@ -116,73 +93,13 @@ namespace RedUtils
 		}
 
 		/// <summary>Turns to face a given target</summary>
-		/// <returns>The target angles for pitch, yaw, and roll</returns>
-		public float[] AimAt(Vec3 targetLocation)
-		{
-			Vec3 localTarget = Me.Local(targetLocation - Me.Location); // Where our target is in local coordinates
-			Vec3 localUp = Me.Local(Vec3.Up); // Where "up" is in local coordinates
-			float[] targetAngles = new float[3] {
-				MathF.Atan2(localTarget.z, localTarget.x), // Angle to pitch towards target
-				MathF.Atan2(localTarget.y, localTarget.x), // Angle to yaw towards target
-				MathF.Atan2(localUp.y, localUp.z) // Angle to roll upright
-			};
-			// Now that we have the angles we need to rotate, we feed them into the PD loops to determine the controller inputs
-			Controller.Steer = SteerPD(targetAngles[1], -Me.LocalAngularVelocity[2] * 0.01f);
-			Controller.Pitch = SteerPD(targetAngles[0], Me.LocalAngularVelocity[1] * 0.2f);
-			Controller.Yaw = SteerPD(targetAngles[1], -Me.LocalAngularVelocity[2] * 0.15f);
-			Controller.Roll = SteerPD(targetAngles[2], Me.LocalAngularVelocity[0] * 0.25f);
-
-			return targetAngles; // Returns the angles, which could be useful for other purposes
-		}
-
-		/// <summary>Turns to face a given target</summary>
-		/// <returns>The target angles for pitch, yaw, and roll</returns>
-		public float[] AimAt(Vec3 targetLocation, bool backwards)
-		{
-			Vec3 localTarget = Me.Local(targetLocation - Me.Location) * (backwards ? -1 : 1); // Where our target is in local coordinates
-			Vec3 localUp = Me.Local(Vec3.Up); // Where "up" is in local coordinates
-			float[] targetAngles = new float[3] {
-				MathF.Atan2(localTarget.z, localTarget.x), // Angle to pitch towards target
-				MathF.Atan2(localTarget.y, localTarget.x), // Angle to yaw towards target
-				MathF.Atan2(localUp.y, localUp.z) // Angle to roll upright
-			};
-			// Now that we have the angles we need to rotate, we feed them into the PD loops to determine the controller inputs
-			Controller.Steer = SteerPD(targetAngles[1], -Me.LocalAngularVelocity[2] * 0.01f) * (backwards ? -1 : 1);
-			Controller.Pitch = SteerPD(targetAngles[0], Me.LocalAngularVelocity[1] * 0.2f);
-			Controller.Yaw = SteerPD(targetAngles[1], -Me.LocalAngularVelocity[2] * 0.15f);
-			Controller.Roll = SteerPD(targetAngles[2], Me.LocalAngularVelocity[0] * 0.25f);
-
-			return targetAngles; // Returns the angles, which could be useful for other purposes
-		}
-
-		/// <summary>Turns to face a given target</summary>
 		/// <param name="up">Which direction to face your roof</param>
 		/// <returns>The target angles for pitch, yaw, and roll</returns>
-		public float[] AimAt(Vec3 targetLocation, Vec3 up)
-		{
-			Vec3 localTarget = Me.Local(targetLocation - Me.Location); // Where our target is in local coordinates
-			Vec3 localUp = Me.Local(up.Normalize()); // Where "up" is in local coordinates
-			float[] targetAngles = new float[3] {
-				MathF.Atan2(localTarget.z, localTarget.x), // Angle to pitch towards target
-				MathF.Atan2(localTarget.y, localTarget.x), // Angle to yaw towards target
-				MathF.Atan2(localUp.y, localUp.z) // Angle to roll upright
-			};
-			// Now that we have the angles we need to rotate, we feed them into the PD loops to determine the controller inputs
-			Controller.Steer = SteerPD(targetAngles[1], -Me.LocalAngularVelocity[2] * 0.01f);
-			Controller.Pitch = SteerPD(targetAngles[0], Me.LocalAngularVelocity[1] * 0.2f);
-			Controller.Yaw = SteerPD(targetAngles[1], -Me.LocalAngularVelocity[2] * 0.15f);
-			Controller.Roll = SteerPD(targetAngles[2], Me.LocalAngularVelocity[0] * 0.25f);
-
-			return targetAngles; // Returns the angles, which could be useful for other purposes
-		}
-
-		/// <summary>Turns to face a given target</summary>
-		/// <param name="up">Which direction to face your roof</param>
-		/// <returns>The target angles for pitch, yaw, and roll</returns>
-		public float[] AimAt(Vec3 targetLocation, Vec3 up, bool backwards)
+		public float[] AimAt(Vec3 targetLocation, Vec3 up = new(), bool backwards = false)
 		{
 			Vec3 localTarget = Me.Local(targetLocation - Me.Location) * (backwards ? -1 : 1); // Where our target is in local coordinates
-			Vec3 localUp = Me.Local(up.Normalize()); // Where "up" is in local coordinates
+			Vec3 safeUp = up.Length() != 0 ? up : Vec3.Up; // Make sure "up" is not the zero vector (which is the default argument)
+			Vec3 localUp = Me.Local(safeUp.Normalize()); // Where "up" is in local coordinates
 			float[] targetAngles = new float[3] {
 				MathF.Atan2(localTarget.z, localTarget.x), // Angle to pitch towards target
 				MathF.Atan2(localTarget.y, localTarget.x), // Angle to yaw towards target
